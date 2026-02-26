@@ -1,0 +1,16 @@
+{
+  "name": "jexl-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "poc": "node jexl-array-iteration.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jexl": "^2.3.0"
+  }
+}
