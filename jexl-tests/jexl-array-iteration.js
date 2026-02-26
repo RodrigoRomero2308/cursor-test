@@ -18,6 +18,11 @@ const testContext = {
     { first: 'Lana', last: 'Kane', age: 33, active: true },
     { first: 'Cyril', last: 'Figgis', age: 45, active: false },
   ],
+  items: [
+    { key: 'a', value: 10, multiplier: 2 },
+    { key: 'b', value: 5, multiplier: 3 },
+    { key: 'c', value: 25, multiplier: 4 },
+  ],
   prefix: 'Agent',
   retireAge: 62,
 };
@@ -38,8 +43,30 @@ const testContext = {
  * - Requiere un wrapper que inyecte la función antes de evaluar
  * - "value" es una convención que el usuario debe conocer
  */
+/**
+ * Registra funciones utilitarias para enriquecer objetos dentro de map.
+ * - addField(obj, fieldName, fieldValue): agrega un campo a un objeto
+ * - addFields(obj, fields): agrega múltiples campos a un objeto
+ * - calcularConImpuesto(valor, multiplicador): fórmula custom de ejemplo (valor * mult * 1.16)
+ */
+function addUtilityFunctions(jexl) {
+  jexl.addFunction('addField', (obj, fieldName, fieldValue) => ({
+    ...obj,
+    [fieldName]: fieldValue,
+  }));
+  jexl.addFunction('addFields', (obj, fields) => ({
+    ...obj,
+    ...fields,
+  }));
+  jexl.addFunction('calcularConImpuesto', (valor, multiplicador) =>
+    valor * multiplicador * 1.16
+  );
+  return jexl;
+}
+
 function createJexlWithMap() {
   const jexl = new Jexl();
+  addUtilityFunctions(jexl);
 
   return {
     addMapFunction(context) {
@@ -279,6 +306,38 @@ async function runPoC() {
   );
   console.log('map(employees, "{...enriched object}"):', JSON.stringify(enriched, null, 2));
 
+  // addField: agregar total = value * multiplier
+  console.log('\n--- addField: agregar campo total ---');
+  const withTotal = await mapJexl.evalWithMap(
+    'map(items, "addField(value, \\"total\\", value.value * value.multiplier)")',
+    testContext
+  );
+  console.log('map(items, "addField(value, total, value.value * value.multiplier)"):', JSON.stringify(withTotal, null, 2));
+
+  // addField con fórmula custom
+  console.log('\n--- addField con fórmula custom (calcularConImpuesto) ---');
+  const withImpuesto = await mapJexl.evalWithMap(
+    'map(items, "addField(value, \\"totalConImpuesto\\", calcularConImpuesto(value.value, value.multiplier))")',
+    testContext
+  );
+  console.log('map(items, "addField(value, totalConImpuesto, calcularConImpuesto(...))"):', JSON.stringify(withImpuesto, null, 2));
+
+  // addFields: total + categoría condicional (usar addFields cuando el 2do campo depende del 1ro)
+  console.log('\n--- addFields: total + categoría condicional ---');
+  const withCategoria = await mapJexl.evalWithMap(
+    'map(items, "addFields(value, {total: value.value * value.multiplier, categoria: value.value * value.multiplier > 50 ? \\"alto\\" : \\"bajo\\"})")',
+    testContext
+  );
+  console.log('addFields con total y categoría:', JSON.stringify(withCategoria, null, 2));
+
+  // addFields: múltiples campos a la vez
+  console.log('\n--- addFields: múltiples campos ---');
+  const withMultiple = await mapJexl.evalWithMap(
+    'map(items, "addFields(value, {total: value.value * value.multiplier, categoria: value.value > 10 ? \\"A\\" : \\"B\\", procesado: true})")',
+    testContext
+  );
+  console.log('addFields con total, categoria, procesado:', JSON.stringify(withMultiple, null, 2));
+
   console.log('\n' + '='.repeat(70));
   console.log('Resumen de convenciones:');
   console.log('- value: item actual del arreglo');
@@ -288,4 +347,19 @@ async function runPoC() {
   console.log('='.repeat(70));
 }
 
-runPoC().catch(console.error);
+// Exportar para tests
+module.exports = {
+  Jexl,
+  createJexlWithMap,
+  addUtilityFunctions,
+  addMapTransform,
+  createJexlWithForEach,
+  createJexlWithReduce,
+  createJexlWithIterate,
+  testContext,
+};
+
+// Ejecutar PoC si se corre directamente
+if (require.main === module) {
+  runPoC().catch(console.error);
+}
