@@ -1,0 +1,11 @@
+services:
+  web:
+    build:
+      context: ./jexl-origin
+      dockerfile: Dockerfile
+    ports:
+      - "3333:3333"
+    environment:
+      - PORT=3333
+      - POC_PASSWORD=${POC_PASSWORD:-changeme}
+      - JWT_SECRET=${JWT_SECRET:-}

@@ -237,12 +237,82 @@ npm test
 
 ---
 
+## UI de ejemplo
+
+En `ui/` hay una interfaz simple que muestra cómo se vería en un frontend cada propuesta de UX:
+
+- **Pasos nombrados (C)** – Vista recomendada para negocio: tarjetas por paso con nombre, fórmula y valor.
+- **Árbol de evaluación (B)** – Árbol expandible + panel de detalle (técnico).
+- **Fórmula navegable (A)** – Fórmula con subexpresiones clickeables que resaltan y muestran valor.
+- **Timeline de funciones (D)** – Tabla de llamadas a funciones custom (orden, args, resultado).
+
+Los datos son de ejemplo en `ui/data.js` (misma estructura que devuelven los PoCs). Para abrir la UI:
+
+```bash
+npm run ui
+```
+
+Luego abrí <http://localhost:3333> en el navegador. También podés abrir `ui/index.html` directamente en el navegador (sin servidor). La UI usa datos de ejemplo en `ui/data.js`, no hace falta correr los PoCs.
+
+---
+
+## Playground con servidor (POC completa)
+
+La POC incluye un **playground** con:
+
+- **Login**: al abrir la web se pide contraseña; se valida en el backend y se devuelve un token JWT válido 24 h.
+- **Editor de expresión y contexto**: podés escribir una expresión JEXL y editar el contexto (JSON). Al pulsar **Evaluar** se validan, se ejecutan y se muestran las cuatro vistas (pasos nombrados, árbol, fórmula navegable, timeline de funciones).
+- **Ayuda**: pestaña con sintaxis JEXL y listado de funciones custom.
+- **Restaurar datos iniciales**: vuelve a la expresión y contexto por defecto (y opcionalmente guardado en `localStorage` se borra).
+
+Para correr el servidor (necesario para el playground y el login):
+
+```bash
+cd jexl-origin
+npm install
+export POC_PASSWORD=tu_contraseña   # obligatorio para que el login funcione
+npm start
+```
+
+Abrí <http://localhost:3333>. La variable `JWT_SECRET` es opcional; si no se define, se usa `POC_PASSWORD` para firmar el token.
+
+---
+
+## Despliegue con Docker
+
+Desde la **raíz del repo** (donde está `docker-compose.yml`):
+
+```bash
+docker compose up --build
+```
+
+Definí la contraseña de acceso con variable de entorno (por defecto en el compose es `changeme`):
+
+```bash
+POC_PASSWORD=mi_password docker compose up --build
+```
+
+O creá un archivo `.env` en la raíz con:
+
+```
+POC_PASSWORD=mi_password
+JWT_SECRET=opcional_secreto_para_jwt
+```
+
+Luego abrí <http://localhost:3333> e ingresá la contraseña para ver el playground.
+
+Para reconstruir tras cambios en el código: `docker compose up --build`.
+
+---
+
 ## Archivos clave
 
 - `01-ast-trace/ast-tracer.js`: evaluador instrumentado por AST
 - `02-function-trace/function-trace.js`: wrappers de funciones custom
 - `03-named-steps/named-steps.js`: ejecucion por pasos y grafo de dependencias
 - `UX.md`: propuestas de interfaz
+- `ui/index.html` y `ui/data.js`: UI playground (login, expresión, contexto, cuatro vistas, ayuda)
+- `server.js`: servidor Express (auth, `/api/eval`, `/api/help`, estáticos)
 
 ---
 

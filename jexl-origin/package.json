@@ -4,16 +4,20 @@
   "description": "PoCs sobre origen de datos y trazabilidad para expresiones JEXL",
   "main": "README.md",
   "scripts": {
+    "start": "node server.js",
     "test": "node --test jexl-origin.test.js",
     "ast-trace": "node 01-ast-trace/demo.js",
     "function-trace": "node 02-function-trace/demo.js",
     "named-steps": "node 03-named-steps/demo.js",
-    "poc": "npm run ast-trace && npm run function-trace && npm run named-steps"
+    "poc": "npm run ast-trace && npm run function-trace && npm run named-steps",
+    "ui": "npx --yes serve ui -p 3333"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
     "jexl": "^2.3.0"
   }
 }

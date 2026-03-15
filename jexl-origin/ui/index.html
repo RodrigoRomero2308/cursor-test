@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JEXL Origin – Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1216;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --green: #3fb950;
+      --orange: #d29922;
+      --purple: #a371f7;
+      --red: #f85149;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Outfit", system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh; }
+    .layout { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+    header { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.25rem 0; }
+    h2 { font-size: 1.1rem; margin: 0 0 0.5rem 0; }
+    .subtitle { color: var(--text-muted); font-size: 0.9rem; }
+
+    /* Login */
+    #login-screen { display: flex; align-items: center; justify-content: center; min-height: 70vh; }
+    .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; width: 100%; max-width: 360px; }
+    .login-box h1 { margin-bottom: 0.5rem; }
+    .login-box .subtitle { margin-bottom: 1.5rem; }
+    .login-box input { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 1rem; margin-bottom: 1rem; }
+    .login-box button { width: 100%; padding: 0.65rem; border: none; border-radius: 6px; background: var(--accent); color: #fff; font-size: 1rem; cursor: pointer; font-weight: 500; }
+    .login-box button:hover { opacity: 0.9; }
+    .login-error { color: var(--red); font-size: 0.9rem; margin-top: 0.75rem; }
+    #app-content { display: none; }
+    #app-content.visible { display: block; }
+
+    /* Playground */
+    .playground-section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .playground-section label { display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.35rem; }
+    .playground-section textarea { width: 100%; min-height: 80px; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-family: "JetBrains Mono", monospace; font-size: 0.85rem; resize: vertical; }
+    .playground-section .context-wrap { margin-top: 1rem; }
+    .playground-section .context-wrap textarea { min-height: 160px; }
+    .btn-row { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+    .btn-row button { padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.9rem; }
+    .btn-row button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-row button:hover { opacity: 0.9; }
+    .eval-error { color: var(--red); font-size: 0.9rem; margin-top: 0.5rem; }
+    .eval-success { color: var(--green); font-size: 0.9rem; margin-top: 0.5rem; }
+
+    .result-banner { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; }
+    .result-banner .label { color: var(--text-muted); font-size: 0.85rem; }
+    .result-banner .value { font-family: "JetBrains Mono", monospace; font-size: 1rem; color: var(--green); }
+
+    .tabs { display: flex; gap: 0.25rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .tab { padding: 0.5rem 1rem; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.9rem; }
+    .tab:hover { color: var(--text); border-color: var(--text-muted); }
+    .tab.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .steps-list { list-style: none; padding: 0; margin: 0; }
+    .step-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .step-card .name { font-weight: 500; margin-bottom: 0.25rem; }
+    .step-card .formula { font-family: "JetBrains Mono", monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .step-card .value { font-family: "JetBrains Mono", monospace; color: var(--green); font-size: 1rem; }
+    .step-card .deps { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem; }
+
+    .tree-panel { display: grid; grid-template-columns: 1fr 320px; gap: 1rem; min-height: 400px; }
+    @media (max-width: 768px) { .tree-panel { grid-template-columns: 1fr; } }
+    .tree-container, .detail-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow: auto; }
+    .detail-panel.empty { color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .tree-node { margin: 0; padding: 0; list-style: none; }
+    .tree-node ul { margin: 0; padding-left: 1.25rem; border-left: 1px solid var(--border); margin-left: 0.35rem; }
+    .tree-item { padding: 0.35rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-family: "JetBrains Mono", monospace; }
+    .tree-item:hover { background: rgba(255,255,255,0.05); }
+    .tree-item.selected { background: var(--accent-dim); border-left: 2px solid var(--accent); }
+    .tree-item .type { color: var(--text-muted); font-size: 0.75rem; margin-right: 0.5rem; }
+    .tree-item .value { color: var(--green); margin-left: 0.5rem; }
+    .tree-item.short-circuit .value { color: var(--orange); }
+    .detail-row { margin-bottom: 0.75rem; font-size: 0.9rem; }
+    .detail-row dt { color: var(--text-muted); margin-bottom: 0.2rem; }
+    .detail-row dd { margin: 0; font-family: "JetBrains Mono", monospace; word-break: break-all; }
+
+    .formula-inline { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; font-family: "JetBrains Mono", monospace; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-wrap; word-break: break-all; }
+    .formula-inline .segment { padding: 2px 4px; border-radius: 3px; cursor: pointer; }
+    .formula-inline .segment:hover { background: rgba(255,255,255,0.08); }
+    .formula-inline .segment.highlight { background: var(--accent-dim); outline: 1px solid var(--accent); }
+    .formula-detail { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+
+    .timeline-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .timeline-table th, .timeline-table td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); }
+    .timeline-table th { color: var(--text-muted); font-weight: 500; }
+    .timeline-table td { font-family: "JetBrains Mono", monospace; }
+    .timeline-table tr:hover td { background: rgba(255,255,255,0.03); }
+    .timeline-table .result-cell { color: var(--green); }
+
+    /* Ayuda */
+    .help-section { margin-bottom: 1.5rem; }
+    .help-section h3 { font-size: 1rem; margin: 0 0 0.5rem 0; color: var(--accent); }
+    .help-list { list-style: none; padding: 0; margin: 0; }
+    .help-list li { padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .help-list li:last-child { border-bottom: none; }
+    .help-list .name { font-family: "JetBrains Mono", monospace; color: var(--text); }
+    .help-list .desc { color: var(--text-muted); margin-top: 0.2rem; }
+    .help-list .example { font-family: "JetBrains Mono", monospace; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
+  </style>
+</head>
+<body>
+  <div id="login-screen">
+    <div class="login-box">
+      <h1>JEXL Origin POC</h1>
+      <p class="subtitle">Ingresá la contraseña para continuar.</p>
+      <form id="login-form">
+        <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password" />
+        <button type="submit">Entrar</button>
+      </form>
+      <p id="login-error" class="login-error" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div id="app-content" class="layout">
+    <header>
+      <h1>JEXL Origin – Playground</h1>
+      <p class="subtitle">Expresión, contexto y visualizaciones (pasos, árbol, fórmula, timeline).</p>
+    </header>
+
+    <section class="playground-section" aria-label="Playground">
+      <label for="expr-input">Expresión JEXL</label>
+      <textarea id="expr-input" placeholder="Ej: user.age > 18 ? 'adulto' : 'menor'"></textarea>
+      <div class="context-wrap">
+        <label for="context-input">Contexto (JSON)</label>
+        <textarea id="context-input" placeholder='{"user": {"age": 42}, ...}'></textarea>
+      </div>
+      <div class="btn-row">
+        <button type="button" id="btn-validate" class="primary">Validar</button>
+        <button type="button" id="btn-eval">Evaluar</button>
+        <button type="button" id="btn-restore">Restaurar datos iniciales</button>
+      </div>
+      <p id="eval-message" class="eval-error" aria-live="polite"></p>
+    </section>
+
+    <div class="result-banner">
+      <span class="label">Resultado final</span>
+      <span class="value" id="global-result">—</span>
+    </div>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab active" data-panel="named-steps" role="tab">Pasos nombrados (C)</button>
+      <button type="button" class="tab" data-panel="tree" role="tab">Árbol (B)</button>
+      <button type="button" class="tab" data-panel="formula" role="tab">Fórmula navegable (A)</button>
+      <button type="button" class="tab" data-panel="timeline" role="tab">Timeline funciones (D)</button>
+      <button type="button" class="tab" data-panel="help" role="tab">Ayuda</button>
+    </nav>
+
+    <section id="panel-named-steps" class="panel active" role="tabpanel">
+      <p class="subtitle" style="margin-bottom: 1rem;">Vista por pasos. Cada paso con nombre, fórmula y valor.</p>
+      <ul class="steps-list" id="steps-list"></ul>
+    </section>
+    <section id="panel-tree" class="panel" role="tabpanel">
+      <p class="subtitle" style="margin-bottom: 1rem;">Árbol de evaluación + panel de detalle.</p>
+      <div class="tree-panel">
+        <div class="tree-container"><ul class="tree-node" id="tree-root"></ul></div>
+        <div class="detail-panel empty" id="tree-detail">Hacé click en un nodo para ver detalle.</div>
+      </div>
+    </section>
+    <section id="panel-formula" class="panel" role="tabpanel">
+      <p class="subtitle" style="margin-bottom: 1rem;">Fórmula con subexpresiones clickeables.</p>
+      <div class="formula-inline" id="formula-inline"></div>
+      <div class="detail-panel empty" id="formula-detail">Seleccioná una parte de la fórmula para ver su valor.</div>
+    </section>
+    <section id="panel-timeline" class="panel" role="tabpanel">
+      <p class="subtitle" style="margin-bottom: 1rem;">Llamadas a funciones custom.</p>
+      <table class="timeline-table">
+        <thead><tr><th>#</th><th>Función</th><th>Argumentos</th><th>Resultado</th></tr></thead>
+        <tbody id="timeline-tbody"></tbody>
+      </table>
+    </section>
+    <section id="panel-help" class="panel" role="tabpanel">
+      <p class="subtitle" style="margin-bottom: 1rem;">Sintaxis JEXL y funciones custom disponibles.</p>
+      <div id="help-content"></div>
+    </section>
+  </div>
+
+  <script src="data.js"></script>
+  <script>
+    // Ruta base del backend (vacío = mismo origen que la página)
+    const API_BASE = '';
+    const TOKEN_KEY = 'poc_token';
+    const PLAYGROUND_KEY = 'jexl-playground';
+
+    function getToken() { return sessionStorage.getItem(TOKEN_KEY); }
+    function setToken(t) { sessionStorage.setItem(TOKEN_KEY, t); }
+    function clearToken() { sessionStorage.removeItem(TOKEN_KEY); }
+
+    async function apiCall(path, options = {}) {
+      const token = getToken();
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      const url = (API_BASE || '') + path;
+      const res = await fetch(url, { ...options, headers });
+      if (res.status === 401) {
+        clearToken();
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('app-content').classList.remove('visible');
+        document.getElementById('login-error').textContent = 'Sesión expirada. Volvé a ingresar.';
+        return null;
+      }
+      return res;
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+    function formatValue(v) {
+      if (v === undefined) return 'undefined';
+      if (v === null) return 'null';
+      if (typeof v === 'string') return '"' + escapeHtml(v) + '"';
+      if (Array.isArray(v) && v.length > 3) return '[' + v.length + ' items]';
+      return escapeHtml(JSON.stringify(v));
+    }
+
+    function renderNamedSteps(data) {
+      const namedSteps = data.namedSteps;
+      const list = document.getElementById('steps-list');
+      list.innerHTML = '';
+      const labels = namedSteps.stepLabels || {};
+      namedSteps.steps.forEach((s) => {
+        const li = document.createElement('li');
+        li.className = 'step-card';
+        li.innerHTML = '<div class="name">' + escapeHtml(labels[s.step] || s.step) + '</div><div class="formula">' + escapeHtml(s.expression) + '</div><div class="value">' + formatValue(s.value) + '</div>' + (s.dependsOn && s.dependsOn.length ? '<div class="deps">Depende de: ' + escapeHtml(s.dependsOn.join(', ')) + '</div>' : '');
+        list.appendChild(li);
+      });
+    }
+
+    function renderTree(data, parentEl) {
+      const node = data;
+      if (!node) return;
+      const li = document.createElement('li');
+      const val = formatValue(node.value);
+      const sc = node.shortCircuited ? ' short-circuit' : '';
+      li.className = 'tree-item' + sc;
+      li.dataset.id = node.id;
+      li.innerHTML = '<span class="type">' + escapeHtml(node.type) + '</span> ' + escapeHtml(node.label) + ' <span class="value">=> ' + val + '</span>';
+      const detailEl = document.getElementById('tree-detail');
+      li.addEventListener('click', function(e) {
+        e.stopPropagation();
+        document.querySelectorAll('.tree-item').forEach((el) => el.classList.remove('selected'));
+        li.classList.add('selected');
+        detailEl.classList.remove('empty');
+        detailEl.innerHTML = '<div class="detail-row"><dt>Tipo</dt><dd>' + escapeHtml(node.type) + '</dd></div><div class="detail-row"><dt>Subexpresión</dt><dd>' + escapeHtml(node.label) + '</dd></div><div class="detail-row"><dt>Valor</dt><dd>' + formatValue(node.value) + '</dd></div>' + (node.shortCircuited ? "<div class='detail-row'><dt>Nota</dt><dd>Short-circuit</dd></div>" : '');
+      });
+      parentEl.appendChild(li);
+      const ul = document.createElement('ul');
+      ul.className = 'tree-node';
+      parentEl.appendChild(ul);
+      (node.children || []).forEach((ch) => renderTree(ch, ul));
+      if (node.iterations && node.iterations.length) {
+        node.iterations.forEach((it, i) => {
+          const sub = document.createElement('li');
+          sub.className = 'tree-item';
+          sub.innerHTML = '<span class="type">filtro[' + i + ']</span> passed=' + it.passed + ' <span class="value">item</span>';
+          ul.appendChild(sub);
+        });
+      }
+    }
+
+    function renderFormula(data) {
+      const astTrace = data.astTrace;
+      const formulaText = astTrace.expression;
+      function flatten(trace, out) {
+        out.push({ id: trace.id, type: trace.type, label: trace.label, value: trace.value });
+        (trace.children || []).forEach((c) => flatten(c, out));
+      }
+      const flat = [];
+      flatten(astTrace.trace, flat);
+      const ranges = [];
+      for (const n of flat) {
+        if (n.label === formulaText) continue;
+        const idx = formulaText.indexOf(n.label);
+        if (idx === -1 || formulaText.indexOf(n.label, idx + 1) !== -1) continue;
+        ranges.push({ start: idx, end: idx + n.label.length, node: n });
+      }
+      const len = formulaText.length;
+      const segmentByIndex = new Array(len);
+      for (let i = 0; i < len; i++) {
+        let best = null;
+        for (const r of ranges) {
+          if (r.start <= i && i < r.end && (!best || r.end - r.start < best.end - best.start)) best = r;
+        }
+        segmentByIndex[i] = best;
+      }
+      const segments = [];
+      let segStart = 0;
+      let segNode = segmentByIndex[0];
+      for (let i = 1; i <= len; i++) {
+        const cur = i === len ? null : segmentByIndex[i];
+        if (cur !== segNode) {
+          segments.push({ start: segStart, end: i, node: segNode ? segNode.node : null });
+          segStart = i;
+          segNode = cur;
+        }
+      }
+      const formulaEl = document.getElementById('formula-inline');
+      const formulaDetail = document.getElementById('formula-detail');
+      formulaEl.innerHTML = '';
+      segments.forEach((seg) => {
+        const text = formulaText.slice(seg.start, seg.end);
+        if (seg.node) {
+          const span = document.createElement('span');
+          span.className = 'segment';
+          span.textContent = text;
+          span.addEventListener('click', function() {
+            document.querySelectorAll('.formula-inline .segment.highlight').forEach((s) => s.classList.remove('highlight'));
+            span.classList.add('highlight');
+            formulaDetail.classList.remove('empty');
+            formulaDetail.innerHTML = '<div class="detail-row"><dt>Tipo</dt><dd>' + escapeHtml(seg.node.type) + '</dd></div><div class="detail-row"><dt>Subexpresión</dt><dd>' + escapeHtml(seg.node.label) + '</dd></div><div class="detail-row"><dt>Valor</dt><dd>' + formatValue(seg.node.value) + '</dd></div>';
+          });
+          formulaEl.appendChild(span);
+        } else {
+          formulaEl.appendChild(document.createTextNode(text));
+        }
+      });
+    }
+
+    function renderTimeline(data) {
+      const calls = data.functionTrace.calls;
+      const tbody = document.getElementById('timeline-tbody');
+      tbody.innerHTML = '';
+      calls.forEach((call, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + escapeHtml(call.pool + '.' + call.name) + '</td><td>' + escapeHtml(call.args.map((a) => JSON.stringify(a)).join(', ')) + '</td><td class="result-cell">' + formatValue(call.result) + '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderAllViews(data) {
+      document.getElementById('global-result').textContent = formatValue(data.astTrace.result);
+      renderNamedSteps(data);
+      const treeRoot = document.getElementById('tree-root');
+      treeRoot.innerHTML = '';
+      renderTree(data.astTrace.trace, treeRoot);
+      renderFormula(data);
+      renderTimeline(data);
+    }
+
+    function setDefaultEditorValues() {
+      document.getElementById('expr-input').value = typeof DEFAULT_EXPRESSION !== 'undefined' ? DEFAULT_EXPRESSION : UI_DATA.expression;
+      const ctx = typeof DEFAULT_CONTEXT !== 'undefined' ? DEFAULT_CONTEXT : {};
+      document.getElementById('context-input').value = JSON.stringify(ctx, null, 2);
+    }
+
+    async function runInitialEval() {
+      const expression = document.getElementById('expr-input').value.trim();
+      if (!expression) return;
+      let context;
+      try {
+        context = JSON.parse(document.getElementById('context-input').value);
+      } catch (e) { return; }
+      const res = await apiCall('/api/eval', { method: 'POST', body: JSON.stringify({ expression, context }) });
+      if (res && res.ok) {
+        const json = await res.json();
+        renderAllViews(json);
+      } else {
+        renderAllViews(UI_DATA);
+      }
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const password = document.getElementById('login-password').value;
+      document.getElementById('login-error').textContent = '';
+      const res = await fetch((API_BASE || '') + '/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (!res.ok) {
+        document.getElementById('login-error').textContent = res.status === 401 ? 'Contraseña incorrecta.' : 'Error de conexión.';
+        return;
+      }
+      const json = await res.json();
+      setToken(json.token);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-content').classList.add('visible');
+      document.getElementById('login-password').value = '';
+      setDefaultEditorValues();
+      const ctxRes = await apiCall('/api/default-context');
+      if (ctxRes && ctxRes.ok) {
+        const ctx = await ctxRes.json();
+        document.getElementById('context-input').value = JSON.stringify(ctx, null, 2);
+      }
+      try {
+        const helpRes = await apiCall('/api/help');
+        if (helpRes && helpRes.ok) {
+          const help = await helpRes.json();
+          const wrap = document.getElementById('help-content');
+          wrap.innerHTML = '<div class="help-section"><h3>JEXL (sintaxis)</h3><ul class="help-list">' + help.builtIn.map((x) => '<li><span class="name">' + escapeHtml(x.name) + '</span><div class="desc">' + escapeHtml(x.description) + '</div>' + (x.example ? '<div class="example">' + escapeHtml(x.example) + '</div>' : '') + '</li>').join('') + '</ul></div><div class="help-section"><h3>Funciones custom</h3><ul class="help-list">' + help.custom.map((x) => '<li><span class="name">' + escapeHtml(x.name) + '</span><div class="desc">' + escapeHtml(x.description) + '</div></li>').join('') + '</ul></div>';
+        }
+      } catch (_) {}
+      const saved = localStorage.getItem(PLAYGROUND_KEY);
+      if (saved) {
+        try {
+          const { expression, context } = JSON.parse(saved);
+          document.getElementById('expr-input').value = expression || document.getElementById('expr-input').value;
+          document.getElementById('context-input').value = typeof context === 'string' ? context : JSON.stringify(context, null, 2);
+        } catch (_) {}
+      }
+      runInitialEval();
+    });
+
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+      });
+    });
+
+    document.getElementById('btn-eval').addEventListener('click', async function() {
+      const msg = document.getElementById('eval-message');
+      msg.textContent = '';
+      msg.className = 'eval-error';
+      const expression = document.getElementById('expr-input').value.trim();
+      let context;
+      try {
+        context = JSON.parse(document.getElementById('context-input').value);
+      } catch (e) {
+        msg.textContent = 'Contexto inválido (JSON).';
+        return;
+      }
+      const res = await apiCall('/api/eval', {
+        method: 'POST',
+        body: JSON.stringify({ expression, context }),
+      });
+      if (!res) return;
+      const json = await res.json();
+      if (!res.ok) {
+        msg.textContent = json.error || json.detail || 'Error al evaluar.';
+        if (json.partial && json.partial.astTrace) renderAllViews({ astTrace: json.partial.astTrace, functionTrace: json.partial.functionTrace || { calls: [] }, namedSteps: json.partial.namedSteps || { steps: [], stepLabels: {} } });
+        return;
+      }
+      msg.textContent = 'Evaluación correcta.';
+      msg.className = 'eval-success';
+      renderAllViews(json);
+      localStorage.setItem(PLAYGROUND_KEY, JSON.stringify({ expression, context }));
+    });
+
+    document.getElementById('btn-validate').addEventListener('click', function() {
+      document.getElementById('btn-eval').click();
+    });
+
+    document.getElementById('btn-restore').addEventListener('click', async function() {
+      localStorage.removeItem(PLAYGROUND_KEY);
+      setDefaultEditorValues();
+      const ctxRes = await apiCall('/api/default-context');
+      if (ctxRes && ctxRes.ok) {
+        const ctx = await ctxRes.json();
+        document.getElementById('context-input').value = JSON.stringify(ctx, null, 2);
+      } else {
+        document.getElementById('context-input').value = JSON.stringify(typeof DEFAULT_CONTEXT !== 'undefined' ? DEFAULT_CONTEXT : {}, null, 2);
+      }
+      document.getElementById('eval-message').textContent = 'Datos restaurados.';
+      document.getElementById('eval-message').className = 'eval-success';
+      renderAllViews(UI_DATA);
+    });
+
+    if (getToken()) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-content').classList.add('visible');
+      setDefaultEditorValues();
+      runInitialEval();
+      apiCall('/api/help').then((r) => r && r.ok ? r.json() : null).then((help) => {
+        if (!help) return;
+        const wrap = document.getElementById('help-content');
+        wrap.innerHTML = '<div class="help-section"><h3>JEXL (sintaxis)</h3><ul class="help-list">' + help.builtIn.map((x) => '<li><span class="name">' + escapeHtml(x.name) + '</span><div class="desc">' + escapeHtml(x.description) + '</div>' + (x.example ? '<div class="example">' + escapeHtml(x.example) + '</div>' : '') + '</li>').join('') + '</ul></div><div class="help-section"><h3>Funciones custom</h3><ul class="help-list">' + help.custom.map((x) => '<li><span class="name">' + escapeHtml(x.name) + '</span><div class="desc">' + escapeHtml(x.description) + '</div></li>').join('') + '</ul></div>';
+      }).catch(function() {});
+    }
+  </script>
+</body>
+</html>
