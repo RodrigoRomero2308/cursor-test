@@ -16,6 +16,7 @@
 
 .NOTES
   No desactiva antivirus. Opciones como -DisableWindowsUpdate implican riesgo de seguridad explícito.
+  La restauracion no reactiva la hibernacion si se aplico powercfg /h off; ejecuta manualmente: powercfg /h on
 #>
 [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Apply')]
 param(
@@ -146,16 +147,15 @@ function Invoke-PowerCfgLine {
 
 function Set-HighPerformancePowerPlan {
   if (-not ($PSCmdlet.ShouldProcess('powercfg', 'Activar plan Alto rendimiento'))) { return }
-  $list = & powercfg /list 2>$null
-  if ($LASTEXITCODE -ne 0) { return }
   $highGuid = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
-  if ($list -match $highGuid) {
+  $list = & powercfg /list 2>$null
+  if ($LASTEXITCODE -eq 0 -and $list -match $highGuid) {
     & powercfg /setactive $highGuid | Out-Null
     return
   }
-  & powercfg /duplicatescheme $highGuid | Out-Null
-  $list2 = & powercfg /list
-  if ($list2 -match '\(([a-f0-9\-]{36})\)\s*\*?\s*Alto rendimiento') {
+
+  $dup = (& powercfg /duplicatescheme $highGuid 2>&1 | Out-String)
+  if ($dup -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
     & powercfg /setactive $Matches[1] | Out-Null
   }
 }
